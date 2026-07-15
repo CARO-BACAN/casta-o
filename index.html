@@ -1,11 +1,31 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>WebAR - O'Higgins Luz Fija</title>
+    <title>WebAR - O'Higgins con Carga</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
     
+    <style>
+      #pantalla-carga {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #1a1a1a;
+        color: #ffffff;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-family: sans-serif;
+        text-align: center;
+        padding: 20px;
+      }
+    </style>
+
     <script>
       AFRAME.registerComponent('controlador-audio', {
         init: function () {
@@ -35,10 +55,25 @@
           });
         }
       });
+
+      window.addEventListener('load', () => {
+        const escena = document.querySelector('a-scene');
+        escena.addEventListener('loaded', () => {
+          setTimeout(() => {
+            document.getElementById('pantalla-carga').style.display = 'none';
+          }, 1500);
+        });
+      });
     </script>
   </head>
 
   <body style="margin: 0px; overflow: hidden;">
+    
+    <div id="pantalla-carga">
+      <h2>Cargando experiencia AR...</h2>
+      <p>Por favor, permite el acceso a la cámara y escanea el patrón Hiro.</p>
+    </div>
+
     <a-scene 
       embedded 
       arjs="sourceType: webcam; debugUIEnabled: false;" 
@@ -50,7 +85,7 @@
         <audio id="mi-audio" src="audio.mp3" preload="auto"></audio>
       </a-assets>
 
-      <a-light type="ambient" color="#ffffff" intensity="0.05"></a-light>
+      <a-light type="ambient" color="#ffffff" intensity="0.01"></a-light>
       
       <a-marker preset="hiro" controlador-audio>
         
@@ -60,7 +95,7 @@
                  color="#fff4e6" 
                  position="1 2.5 1.2" 
                  rotation="-45 25 0" 
-                 intensity="2.8" 
+                 intensity="1.5" 
                  angle="35" 
                  penumbra="0.2" 
                  target="#targetEntidad">
@@ -69,7 +104,7 @@
         <a-entity 
           gltf-model="#estatua" 
           scale="0.03 0.03 0.03"  
-          position="0 -0.5 0"
+          position="0 0.15 0"
           rotation="0 0 0"
           animation-mixer
           fake-envmap>
