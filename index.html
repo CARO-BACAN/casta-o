@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>WebAR - O'Higgins Luz Cenital</title>
+    <title>WebAR - O'Higgins Profesional</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
@@ -11,18 +11,45 @@
         position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: #1a1a1a;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
         color: #ffffff;
         z-index: 9999;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        font-family: sans-serif;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         text-align: center;
-        padding: 20px;
+        padding: 5%;
+        box-sizing: border-box;
+        transition: opacity 0.8s ease;
+      }
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        animation: girar 1s linear infinite;
+        margin-bottom: 30px;
+      }
+      @keyframes girar {
+        to { transform: rotate(360deg); }
+      }
+      #pantalla-carga h2 {
+        font-size: clamp(1.2rem, 5vw, 1.8rem);
+        margin: 0 0 10px 0;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }
+      #pantalla-carga p {
+        font-size: clamp(0.9rem, 3.5vw, 1.1rem);
+        margin: 0;
+        max-width: 600px;
+        color: #b3b3b3;
+        line-height: 1.6;
       }
     </style>
 
@@ -60,7 +87,11 @@
         const escena = document.querySelector('a-scene');
         escena.addEventListener('loaded', () => {
           setTimeout(() => {
-            document.getElementById('pantalla-carga').style.display = 'none';
+            const pantalla = document.getElementById('pantalla-carga');
+            pantalla.style.opacity = '0';
+            setTimeout(() => {
+              pantalla.style.display = 'none';
+            }, 800);
           }, 1500);
         });
       });
@@ -70,8 +101,9 @@
   <body style="margin: 0px; overflow: hidden;">
     
     <div id="pantalla-carga">
-      <h2>Cargando experiencia AR...</h2>
-      <p>Por favor, permite el acceso a la cámara y escanea el patrón Hiro.</p>
+      <div class="spinner"></div>
+      <h2>Iniciando Realidad Aumentada</h2>
+      <p>Apunta tu cámara al marcador Hiro para visualizar la estatua interactiva.</p>
     </div>
 
     <a-scene 
@@ -93,7 +125,7 @@
         
         <a-light type="spot" 
                  color="#fff4e6" 
-                 position="1 15.5 1.2" 
+                 position="1 5.5 1.2" 
                  rotation="-45 25 0" 
                  intensity="1.5" 
                  angle="35" 
@@ -104,7 +136,7 @@
         <a-entity 
           gltf-model="#estatua" 
           scale="0.03 0.03 0.03"  
-          position="0 0 0"
+          position="0 0.15 0"
           rotation="0 0 0"
           animation-mixer
           fake-envmap>
