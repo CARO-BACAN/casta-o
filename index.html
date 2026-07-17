@@ -9,79 +9,132 @@
     <style>
       #pantalla-carga {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
         background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
         color: #ffffff;
         z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
+        display: flex; flex-direction: column;
+        justify-content: center; align-items: center;
         font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         text-align: center;
-        padding: 5%;
+        padding: 5%; 
         box-sizing: border-box;
         transition: opacity 0.8s ease;
       }
       .spinner {
-        width: 40px;
-        height: 40px;
+        width: 40px; height: 40px;
         border: 4px solid rgba(255, 255, 255, 0.1);
         border-top-color: #ffffff;
         border-radius: 50%;
         animation: girar 1s linear infinite;
         margin-bottom: 20px;
       }
-      @keyframes girar {
-        to { transform: rotate(360deg); }
-      }
+      @keyframes girar { to { transform: rotate(360deg); } }
       
-      /* Nueva animación de parpadeo suave */
       @keyframes parpadeo {
         0% { opacity: 0.15; }
         50% { opacity: 0.6; }
         100% { opacity: 0.15; }
       }
 
-      /* Estilos para la imagen del patrón en la carga con la animación aplicada */
       #imagen-patrón {
-        width: 180px;
-        max-width: 50vw;
-        border-radius: 10px;
-        margin-bottom: 25px;
+        width: 180px; max-width: 50vw;
+        border-radius: 10px; margin-bottom: 25px;
         box-shadow: 0px 4px 15px rgba(0,0,0,0.5);
-        animation: parpadeo 2.5s ease-in-out infinite; /* Llama a la animación */
+        animation: parpadeo 2.5s ease-in-out infinite;
       }
       
       #pantalla-carga h2 {
         font-size: clamp(1.2rem, 5vw, 1.8rem);
-        margin: 0 0 10px 0;
-        font-weight: 600;
-        letter-spacing: 0.5px;
+        margin: 0 0 10px 0; font-weight: 600;
       }
       #pantalla-carga p {
         font-size: clamp(0.9rem, 3.5vw, 1.1rem);
-        margin: 0;
+        margin: 0; max-width: 600px;
+        color: #b3b3b3; line-height: 1.6;
+      }
+
+      /* ========================================= */
+      /* /* NUEVO: ESTILOS CSS PARA SUBTÍTULOS */ */
+      /* ========================================= */
+      #contenedor-subtitulos {
+        position: fixed;
+        bottom: 30px; /* Safe Zone inferior para barras de navegación móviles */
+        left: 50%;
+        transform: translateX(-50%); /* Centrado perfecto horizontal */
+        width: 80%;
         max-width: 600px;
-        color: #b3b3b3;
-        line-height: 1.6;
+        background-color: rgba(0, 0, 0, 0.7); /* Fondo oscuro traslúcido */
+        color: white;
+        font-family: sans-serif;
+        font-size: clamp(1rem, 4vw, 1.3rem);
+        text-align: center;
+        padding: 15px;
+        border-radius: 8px;
+        z-index: 100; /* Por debajo de carga, pero por encima de AR */
+        display: none; /* Oculto por defecto */
+        pointer-events: none; /* Deja pasar los clics */
+        box-sizing: border-box;
       }
     </style>
 
     <script>
+      // =========================================
+      // // NUEVO: DATOS DE LOS SUBTÍTULOS (Sincronización)
+      // =========================================
+      // Aquí defines en qué SEGUNDO aparece cada texto.
+      // Debes escuchar tu audio y anotar los tiempos.
+      const datosSubtitulos = [
+        { tiempo: 0, texto: "Bienvenidos a la experiencia de Realidad Aumentada." },
+        { tiempo: 4, texto: "Estamos viendo la estatua de Bernardo O'Higgins..." },
+        { tiempo: 8, texto: "...situada en la Plaza de la Ciudadanía en Santiago." },
+        { tiempo: 13, texto: "Fue un líder clave en la independencia de Chile." },
+        { tiempo: 18, texto: "Fin de la narración." },
+        { tiempo: 21, texto: "" } // Subtítulo vacío para "apagar" al final
+      ];
+
       AFRAME.registerComponent('controlador-audio', {
         init: function () {
-          let audio = document.querySelector('#mi-audio');
+          this.audio = document.querySelector('#mi-audio');
+          this.subtitulosDiv = document.querySelector('#contenedor-subtitulos'); // NUEVO
+          
           this.el.addEventListener('markerFound', () => {
-            audio.play();
+            this.audio.play();
+            this.subtitulosDiv.style.display = 'block'; // NUEVO: Mostrar al encontrar
           });
+          
           this.el.addEventListener('markerLost', () => {
-            audio.pause();
-            audio.currentTime = 0;
+            this.audio.pause();
+            this.audio.currentTime = 0;
+            this.subtitulosDiv.style.display = 'none'; // NUEVO: Ocultar al perder
+            this.subtitulosDiv.innerHTML = ""; // Limpiar texto
           });
+        },
+        
+        // =========================================
+        // // NUEVO: LÓGICA DE SINCRONIZACIÓN (Tick)
+        // =========================================
+        // La función tick corre en cada frame de la app AR.
+        tick: function (time, timeDelta) {
+          if (!this.audio || this.audio.paused) return;
+
+          let tiempoActual = this.audio.currentTime; // Segundos del audio
+          let textoAMostrar = "";
+
+          // Buscamos cuál es el subtítulo correcto para el tiempo actual
+          for (let i = 0; i < datosSubtitulos.length; i++) {
+            if (tiempoActual >= datosSubtitulos[i].tiempo) {
+              textoAMostrar = datosSubtitulos[i].texto;
+            } else {
+              break; // Ya encontramos el más reciente
+            }
+          }
+
+          // Actualizamos el DIV solo si el texto cambió (para performance)
+          if (this.subtitulosDiv.innerHTML !== textoAMostrar) {
+            this.subtitulosDiv.innerHTML = textoAMostrar;
+          }
         }
       });
 
@@ -119,12 +172,16 @@
   <body style="margin: 0px; overflow: hidden;">
     
     <div id="pantalla-carga">
-      <!-- Aquí agregamos tu imagen png con el patrón -->
       <img id="imagen-patrón" src="patron.png" alt="Busca este patrón">
       <div class="spinner"></div>
       <h2>Iniciando Realidad Aumentada</h2>
       <p>Apunta tu cámara a esta imagen para visualizar la estatua interactiva.</p>
     </div>
+
+    <!-- ========================================= -->
+    <!-- <!-- NUEVO: CONTENEDOR HTML DE SUBTÍTULOS --> -->
+    <!-- ========================================= -->
+    <div id="contenedor-subtitulos"></div>
 
     <a-scene 
       embedded 
@@ -139,12 +196,9 @@
 
       <a-light type="ambient" color="#ffffff" intensity="0.01"></a-light>
       
-      <!-- AQUÍ ESTÁ EL CAMBIO CLAVE PARA TU MARCADOR PERSONALIZADO -->
       <a-marker type="pattern" url="patron.patt" controlador-audio>
-        
         <a-entity id="targetEntidad" position="0 0.15 0"></a-entity>
         
-        <!-- INTENSIDAD DE LUZ REDUCIDA -->
         <a-light type="spot" 
                  color="#fff4e6" 
                  position="1 6.5 3.2" 
@@ -163,7 +217,6 @@
           animation-mixer
           fake-envmap>
         </a-entity>
-        
       </a-marker>
       
       <a-entity camera></a-entity>
