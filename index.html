@@ -113,121 +113,154 @@
         opacity: 1;
         width: 100%;
       }
+
+      #contenedor-barra {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 5px;
+        background-color: rgba(255, 255, 255, 0.15);
+        z-index: 999999;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        pointer-events: none;
+      }
+
+      #barra-progreso {
+        height: 100%;
+        width: 0%;
+        background-color: #ffffff;
+        transition: width 0.1s linear;
+      }
+
     </style>
 
     <script>
       window.interaccionLista = false;
-      window.marcadorEncontrado = false;
-      window.textoActual = "";
+window.marcadorEncontrado = false;
+window.textoActual = "";
 
-      const datosSubtitulos = [
-        { tiempo: 0, texto: "El castaño de Bernardo O'Higgins" },
-        { tiempo: 3, texto: "forma parte de la histórica hacienda San José de las Canteras," },
-        { tiempo: 7, texto: "en la actual localidad de Canteras, comuna de Quilleco." },
-        { tiempo: 12, texto: "Durante más de dos siglos," },
-        { tiempo: 14, texto: "este árbol ha acompañado la historia del lugar." },
-        { tiempo: 18, texto: "Bajo sus ramas," }, 
-        { tiempo: 20, texto: "transcurrió parte de la juventud de Bernardo O'Higgins," }, 
-        { tiempo: 24, texto: "mucho antes de convertirse en una de las figuras más importantes" },
-        { tiempo: 29, texto: "de la independencia de Chile." }, 
-        { tiempo: 32, texto: "Hoy continúa siendo un símbolo del patrimonio local" }, 
-        { tiempo: 37, texto: "y un vínculo entre la naturaleza y la historia de Quilleco." },
-        { tiempo: 42, texto: "" } 
-      ];
+const datosSubtitulos = [
+  { tiempo: 0, texto: "El castaño de Bernardo O'Higgins" },
+  { tiempo: 3, texto: "forma parte de la histórica hacienda San José de las Canteras," },
+  { tiempo: 7, texto: "en la actual localidad de Canteras, comuna de Quilleco." },
+  { tiempo: 12, texto: "Durante más de dos siglos," },
+  { tiempo: 14, texto: "este árbol ha acompañado la historia del lugar." },
+  { tiempo: 18, texto: "Bajo sus ramas," }, 
+  { tiempo: 20, texto: "transcurrió parte de la juventud de Bernardo O'Higgins," }, 
+  { tiempo: 24, texto: "mucho antes de convertirse en una de las figuras más importantes" },
+  { tiempo: 29, texto: "de la independencia de Chile." }, 
+  { tiempo: 32, texto: "Hoy continúa siendo un símbolo del patrimonio local" }, 
+  { tiempo: 37, texto: "y un vínculo entre la naturaleza y la historia de Quilleco." },
+  { tiempo: 42, texto: "" } 
+];
 
-      function iniciarExperiencia() {
-        if (window.interaccionLista) return;
-        
-        const audio = document.getElementById('mi-audio');
-        audio.play().then(() => {
-          audio.pause();
-          audio.currentTime = 0;
-        }).catch(err => console.log("Audio desbloqueado:", err));
-        
-        window.interaccionLista = true;
-        const pantalla = document.getElementById('pantalla-carga');
-        pantalla.style.opacity = '0';
-        setTimeout(() => { pantalla.style.display = 'none'; }, 800);
+function iniciarExperiencia() {
+  if (window.interaccionLista) return;
+  
+  const audio = document.getElementById('mi-audio');
+  audio.play().then(() => {
+    audio.pause();
+    audio.currentTime = 0;
+  }).catch(err => console.log("Audio desbloqueado:", err));
+  
+  window.interaccionLista = true;
+  const pantalla = document.getElementById('pantalla-carga');
+  pantalla.style.opacity = '0';
+  setTimeout(() => { pantalla.style.display = 'none'; }, 800);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const audio = document.getElementById('mi-audio');
+  const subtitulosDiv = document.getElementById('contenedor-subtitulos');
+  const textoSpan = document.getElementById('texto-subtitulos');
+  const barraProgreso = document.getElementById('barra-progreso');
+
+  audio.addEventListener('timeupdate', () => {
+    if (!window.marcadorEncontrado) return;
+
+    let tiempoActual = audio.currentTime;
+    
+    if (audio.duration) {
+      let porcentaje = (tiempoActual / audio.duration) * 100;
+      barraProgreso.style.width = porcentaje + "%";
+    }
+
+    let textoAMostrar = "";
+    
+    for (let i = 0; i < datosSubtitulos.length; i++) {
+      if (tiempoActual >= datosSubtitulos[i].tiempo) {
+        textoAMostrar = datosSubtitulos[i].texto;
+      } else {
+        break;
       }
+    }
+    
+    if (window.textoActual !== textoAMostrar) {
+      window.textoActual = textoAMostrar;
+      
+      if (textoAMostrar === "") {
+        subtitulosDiv.style.opacity = '0';
+        setTimeout(() => { textoSpan.innerText = ""; }, 400);
+      } else {
+        subtitulosDiv.style.opacity = '1';
+        textoSpan.style.opacity = '0';
+        setTimeout(() => {
+          textoSpan.innerText = textoAMostrar;
+          textoSpan.style.opacity = '1';
+        }, 300); 
+      }
+    }
+  });
+});
 
-      document.addEventListener("DOMContentLoaded", () => {
-        const audio = document.getElementById('mi-audio');
-        const subtitulosDiv = document.getElementById('contenedor-subtitulos');
-        const textoSpan = document.getElementById('texto-subtitulos');
+AFRAME.registerComponent('controlador-audio', {
+  init: function () {
+    this.audio = document.querySelector('#mi-audio');
+    this.subtitulosDiv = document.querySelector('#contenedor-subtitulos');
+    this.textoSpan = document.querySelector('#texto-subtitulos');
+    this.contenedorBarra = document.querySelector('#contenedor-barra');
+    this.barraProgreso = document.querySelector('#barra-progreso');
+    
+    this.el.addEventListener('markerFound', () => {
+      if (window.interaccionLista) {
+        window.marcadorEncontrado = true;
+        this.audio.play();
+        window.textoActual = "";
+        if (this.contenedorBarra) this.contenedorBarra.style.opacity = '1';
+      }
+    });
+    
+    this.el.addEventListener('markerLost', () => {
+      window.marcadorEncontrado = false;
+      this.audio.pause();
+      this.audio.currentTime = 0;
+      
+      this.subtitulosDiv.style.opacity = '0';
+      if (this.contenedorBarra) this.contenedorBarra.style.opacity = '0';
+      if (this.barraProgreso) this.barraProgreso.style.width = '0%';
+      window.textoActual = "";
+      setTimeout(() => { this.textoSpan.innerText = ""; }, 400);
+    });
+  }
+});
 
-        audio.addEventListener('timeupdate', () => {
-          if (!window.marcadorEncontrado) return;
-
-          let tiempoActual = audio.currentTime;
-          let textoAMostrar = "";
-          
-          for (let i = 0; i < datosSubtitulos.length; i++) {
-            if (tiempoActual >= datosSubtitulos[i].tiempo) {
-              textoAMostrar = datosSubtitulos[i].texto;
-            } else {
-              break;
-            }
-          }
-          
-          if (window.textoActual !== textoAMostrar) {
-            window.textoActual = textoAMostrar;
-            
-            if (textoAMostrar === "") {
-              subtitulosDiv.style.opacity = '0';
-              setTimeout(() => { textoSpan.innerText = ""; }, 400);
-            } else {
-              subtitulosDiv.style.opacity = '1';
-              textoSpan.style.opacity = '0';
-              setTimeout(() => {
-                textoSpan.innerText = textoAMostrar;
-                textoSpan.style.opacity = '1';
-              }, 300); 
-            }
-          }
-        });
-      });
-
-      AFRAME.registerComponent('controlador-audio', {
-        init: function () {
-          this.audio = document.querySelector('#mi-audio');
-          this.subtitulosDiv = document.querySelector('#contenedor-subtitulos');
-          this.textoSpan = document.querySelector('#texto-subtitulos');
-          
-          this.el.addEventListener('markerFound', () => {
-            if (window.interaccionLista) {
-              window.marcadorEncontrado = true;
-              this.audio.play();
-              window.textoActual = "";
-            }
-          });
-          
-          this.el.addEventListener('markerLost', () => {
-            window.marcadorEncontrado = false;
-            this.audio.pause();
-            this.audio.currentTime = 0;
-            
-            this.subtitulosDiv.style.opacity = '0';
-            window.textoActual = "";
-            setTimeout(() => { this.textoSpan.innerText = ""; }, 400);
-          });
+AFRAME.registerComponent('fake-envmap', {
+  init: function () {
+    this.el.addEventListener('model-loaded', () => {
+      const mesh = this.el.getObject3D('mesh');
+      const texture = new THREE.TextureLoader().load('reflejo.jpg');
+      texture.mapping = THREE.EquirectangularReflectionMapping;
+      mesh.traverse((node) => {
+        if (node.isMesh && node.material && 'envMap' in node.material) {
+          node.material.envMap = texture;
+          node.material.needsUpdate = true;
         }
       });
-
-      AFRAME.registerComponent('fake-envmap', {
-        init: function () {
-          this.el.addEventListener('model-loaded', () => {
-            const mesh = this.el.getObject3D('mesh');
-            const texture = new THREE.TextureLoader().load('reflejo.jpg');
-            texture.mapping = THREE.EquirectangularReflectionMapping;
-            mesh.traverse((node) => {
-              if (node.isMesh && node.material && 'envMap' in node.material) {
-                node.material.envMap = texture;
-                node.material.needsUpdate = true;
-              }
-            });
-          });
-        }
-      });
+    });
+  }
+});
     </script>
   </head>
 
@@ -243,6 +276,11 @@
 
     <div id="contenedor-subtitulos">
       <span id="texto-subtitulos"></span>
+    </div>
+
+    <!-- Barra de progreso -->
+    <div id="contenedor-barra">
+      <div id="barra-progreso"></div>
     </div>
 
     <a-scene 
